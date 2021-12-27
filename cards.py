@@ -8,8 +8,8 @@ from tkinter import filedialog
 from pathlib import Path
 from time import sleep
 from tkinter import *
-import subprocess
-import webbrowser
+import subprocess#979ea06b981f0a3848c2f438
+import webbrowser#76561199132470596%7C%7C1DEB914A7CC372299EF0316F0202CE5871963DB3
 import threading 
 import datetime
 import logging
@@ -56,7 +56,7 @@ GPOP_HEIGHT=(POX_Y_SPACING*7)+(NORMAL_HEIGTH*6)
 GAMES_WIDTH=(POX_X_SPACING*3)+(NORMAL_WIDTH*2)#gamesM
 GAMES_HEIGTH=(POX_Y_SPACING*4)+(NORMAL_HEIGTH*3)
 ##VERSION
-VERSION="V1.17"
+VERSION="V1.18"
 ##SETTINGS
 SETTINGS_VER=4
 class Settings():
@@ -664,7 +664,7 @@ class Menus():
                             gamelink = ""
                             script = ""
                             if "wallet_lim" in filters:
-                                if filters["wallet_lim"] < filters["wallet"]-game["price"]:#prior 1
+                                if filters["wallet_lim"] > totalp:#prior 1
                                     add = True
                                 else:
                                     warn = "Wallet limit reached"
@@ -681,12 +681,12 @@ class Menus():
                                 else:
                                     warn = "GAME qtty reached"
                                     break
-                            if float(game["price"]) >= float(SETTINGS["GPOP_FILTER"]["MAX_PRICE"]):
+                            if float(game["price"]) <= float(SETTINGS["GPOP_FILTER"]["MAX_PRICE"]):
                                 if filters["wallet"] > (totalp+game["price"]):
                                     if add:
                                         totalp+=game["price"]
                                         games[gamenum] = game ## save game
-                                        filters["wallet"] -= game["price"]##update wallet
+                                        # filters["wallet"] -= game["price"]##update wallet
                                         gamenum+=1##next game
                                         if "ars_qtty" in filters:  
                                             filters["ars_qtty"] -= game["price"]## update filter
@@ -699,17 +699,19 @@ class Menus():
                                 warn = "Price too high"
                                 break
 
-            res = messagebox.askquestion("",f'Do u want to buy {gamenum} Games for {round(totalp,2)} Ars,\n·{warn}')
+            res = messagebox.askquestion("",f'Do u want to buy {gamenum} Games for {round(totalp,2)} Ars,\n·REASON: {warn}')
             if res == "yes":
                 driver.get("https://store.steampowered.com/cart/")
                 sleep(0.5)
                 for x in range(gamenum):
                     driver.execute_script(games[x]["script"])
                     sleep(2.5)
-                    if driver.find_element(By.CLASS_NAME,"cart_status_message").text != "Your item has been added!":
-                        # driver.execute_script(games[x]["script"])
-                        print(games[x]["name"])
-                        gamenum-=1
+                    try:
+                        if driver.find_element(By.CLASS_NAME,"cart_status_message").text != "Your item has been added!":
+                            print(games[x]["name"])
+                            gamenum-=1
+                    except:
+                        pass
                 sleep(1)
                 finishbuytime = time.time()
                 lblCounter["text"] = gamenum
