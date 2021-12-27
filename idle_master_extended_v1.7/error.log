@@ -1,0 +1,48 @@
+﻿26/12/2021 23:32:42   
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at IdleMasterExtended.frmBrowser.tmrCheck_Tick(Object sender, EventArgs e)
+   at System.Windows.Forms.Timer.OnTick(EventArgs e)
+   at System.Windows.Forms.Timer.TimerNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)
+26/12/2021 23:36:56   
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at IdleMasterExtended.frmBrowser.tmrCheck_Tick(Object sender, EventArgs e)
+   at System.Windows.Forms.Timer.OnTick(EventArgs e)
+   at System.Windows.Forms.Timer.TimerNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)
+26/12/2021 23:42:52   
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at IdleMasterExtended.frmBrowser.tmrCheck_Tick(Object sender, EventArgs e)
+   at System.Windows.Forms.Timer.OnTick(EventArgs e)
+   at System.Windows.Forms.Timer.TimerNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)
+27/12/2021 00:00:31   
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at IdleMasterExtended.frmBrowser.tmrCheck_Tick(Object sender, EventArgs e)
+   at System.Windows.Forms.Timer.OnTick(EventArgs e)
+   at System.Windows.Forms.Timer.TimerNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)
+27/12/2021 00:00:42   
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at IdleMasterExtended.frmBrowser.tmrCheck_Tick(Object sender, EventArgs e)
+   at System.Windows.Forms.Timer.OnTick(EventArgs e)
+   at System.Windows.Forms.Timer.TimerNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)
+27/12/2021 00:13:51   
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at IdleMasterExtended.frmBrowser.tmrCheck_Tick(Object sender, EventArgs e)
+   at System.Windows.Forms.Timer.OnTick(EventArgs e)
+   at System.Windows.Forms.Timer.TimerNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)
+27/12/2021 00:13:52   
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at IdleMasterExtended.frmBrowser.tmrCheck_Tick(Object sender, EventArgs e)
+   at System.Windows.Forms.Timer.OnTick(EventArgs e)
+   at System.Windows.Forms.Timer.TimerNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)
+27/12/2021 00:33:03   
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at IdleMasterExtended.frmBrowser.tmrCheck_Tick(Object sender, EventArgs e)
+   at System.Windows.Forms.Timer.OnTick(EventArgs e)
+   at System.Windows.Forms.Timer.TimerNativeWindow.WndProc(Message& m)
+   at System.Windows.Forms.NativeWindow.Callback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)

@@ -20,6 +20,7 @@ import ctypes
 import time
 # import sys
 import os
+
 ##SIZE
 NORMAL_WIDTH=100#x
 NORMAL_HEIGTH=30#y
@@ -42,21 +43,22 @@ POS_ROW5_Y=(POX_Y_SPACING*5)+(NORMAL_HEIGTH*4)
 POS_ROW6_Y=(POX_Y_SPACING*6)+(NORMAL_HEIGTH*5)
 POS_ROW7_Y=(POX_Y_SPACING*7)+(NORMAL_HEIGTH*6)
 ##WINDOWS
-CARDS_WIDTH=(POX_X_SPACING*7)+(NORMAL_WIDTH*6)
+CARDS_WIDTH=(POX_X_SPACING*7)+(NORMAL_WIDTH*6)#cardsM
 CARDS_HEIGTH=(POX_Y_SPACING*8)+(NORMAL_HEIGTH*7)
-LOGIN_WIDTH=(POX_X_SPACING*3)+(NORMAL_WIDTH*2)
+LOGIN_WIDTH=(POX_X_SPACING*3)+(NORMAL_WIDTH*2)#loginM
 LOGIN_HEIGHT=(POX_Y_SPACING*5)+(NORMAL_HEIGTH*4)
-START_WIDTH=(POX_X_SPACING*3)+(NORMAL_WIDTH*2)
+START_WIDTH=(POX_X_SPACING*3)+(NORMAL_WIDTH*2)#startM
 START_HEIGHT=(POX_Y_SPACING*7)+(NORMAL_HEIGTH*6)
-SETTINGS_HEIGHT=(POX_Y_SPACING*8)+(NORMAL_HEIGTH*7)
+SETTINGS_HEIGHT=(POX_Y_SPACING*8)+(NORMAL_HEIGTH*7)#settingsM
 SETTINGS_WIDTH=int(POX_X_SPACING*3.5)+(NORMAL_WIDTH*3)
-GPOP_WIDTH=int(POX_X_SPACING*3.5)+(NORMAL_WIDTH*3)
+GPOP_WIDTH=int(POX_X_SPACING*3.5)+(NORMAL_WIDTH*3)#gamespop
 GPOP_HEIGHT=(POX_Y_SPACING*7)+(NORMAL_HEIGTH*6)
+GAMES_WIDTH=(POX_X_SPACING*3)+(NORMAL_WIDTH*2)#gamesM
+GAMES_HEIGTH=(POX_Y_SPACING*4)+(NORMAL_HEIGTH*3)
 ##VERSION
-VERSION="V1.16"
-##CREDENTIALS
-URL="https://store.steampowered.com/login/"
+VERSION="V1.17"
 ##SETTINGS
+SETTINGS_VER=4
 class Settings():
     def save():
         with open(SETTINGS_FILE,"wb") as piklefile:
@@ -68,16 +70,26 @@ class Settings():
         ctypes.windll.user32.GetWindowRect(hwnd, ctypes.pointer(rect))
         SETTINGS[menu] = (rect.left, rect.top)
         Settings.save()
-
-SETTINGS_FILE = f"{Path.home()}\\Documents\\YPPAHSOFT\\settings.pkl"
-if os.path.exists(SETTINGS_FILE):
-   with open(SETTINGS_FILE,"rb") as piklefile:
-        SETTINGS = pickle.load(piklefile)
-else:
-    APP_DIRECTORY=f"{Path.home()}\\Documents\\YPPAHSOFT\\"
-    user32 = ctypes.windll.user32
-    user32.SetProcessDPIAware()
-    SETTINGS = {
+    def CheckForUpdates():
+        if SETTINGS["VERSION_CD"] == None or (time.time()-SETTINGS["VERSION_CD"]) > 86400:
+            UPDATES_URL="https://github.com/YPPPAH/SteamTradingCards"
+            session = HTMLSession()
+            request = session.get(UPDATES_URL)
+            try:
+                version = request.html.find("#repo-content-pjax-container", first=True).find(".markdown-title", first=True).text
+                print(f"github version {version}")
+                if version != None:
+                    if float(version) > VERSION:
+                        result = messagebox.askquestion("","There is a newer version of the bot, do you want to download?")
+                        SETTINGS["VERSION_CD"]=time.time()
+                        if result == 'yes':
+                            webbrowser.open_new(UPDATES_URL)
+            except Exception as e:
+                logging.error(e)
+    def DefaultSettings():
+        user32 = ctypes.windll.user32
+        user32.SetProcessDPIAware()
+        return {
         "ACCID": None,
         "COUNTER": 0,
         "TIME": 0,
@@ -85,8 +97,10 @@ else:
         "IPAGE": 0,
         "PRICE": 0,
         "STOP": False,
-        "COOKIES": [],
-        "S_DB_FILE": f"{Path.home()}\\Documents\\YPPAHSOFT\\cards.db",
+        "COOKIES_SELL": [],
+        "COOKIES_BUY": [],
+        "COOKIES_CD": None,
+        "DB_FILE": f"{Path.home()}\\Documents\\YPPAHSOFT\\cards.db",
         "APP_DIRECTORY": APP_DIRECTORY,
         "BG_COLOR": "SystemButtonFace",
         "TXT_COLOR": "black",
@@ -104,23 +118,32 @@ else:
             "QUANTITY_GAM": None,
             "WALLET_QTTY": None,
         },
-        "STEAM_DIR": None
+        "STEAM_DIR": None,
+        "WALLET": {
+            "AMOUNT": None,
+            "LAST_CHECK": None
+        },
+        "SETTINGS_VER": SETTINGS_VER
     }
-    if not os.path.exists(APP_DIRECTORY):
-        os.mkdir(APP_DIRECTORY)
-    Settings.save()
-
-# if (SETTINGS["VERSION_CD"] == None or time.time()-SETTINGS["VERSION_CD"]) > 86400:
-#     UPDATES_URL="https://github.com/YPPPAH/SteamTradingCards"
-#     session = HTMLSession()
-#     request = session.get(UPDATES_URL)
-#     version = request.html.find("#repo-content-pjax-container", first=True).find(".markdown-title", first=True).text
-#     if version != None:
-#         if float(version) > VERSION:
-#             result = messagebox.askquestion("","There is a newer version of the bot, do you want to download?")
-#             SETTINGS["VERSION_CD"]=time.time()
-#             if result == 'yes':
-#                 webbrowser.open_new(UPDATES_URL)
+    def LoadSettings():
+        if os.path.exists(SETTINGS_FILE):
+            with open(SETTINGS_FILE,"rb") as piklefile:
+                seting = pickle.load(piklefile)
+                if seting["SETTINGS_VER"]<SETTINGS_VER:
+                    return Settings.DefaultSettings()
+                else:
+                    return seting
+        else:
+            seting = Settings.DefaultSettings()
+            if not os.path.exists(APP_DIRECTORY):
+                os.mkdir(APP_DIRECTORY)
+            return seting
+            
+APP_DIRECTORY=f"{Path.home()}\\Documents\\YPPAHSOFT\\"
+SETTINGS_FILE = f"{Path.home()}\\Documents\\YPPAHSOFT\\settings.pkl"
+SETTINGS = Settings.LoadSettings()
+Settings.save()      
+# Settings.CheckForUpdates()
 
 class Functions():
     def fnd(driver,path):
@@ -186,7 +209,7 @@ class Menus():
             Menus.LoginM()
         
         def cards():
-            if SETTINGS["COOKIES"]==[]:
+            if SETTINGS["COOKIES_SELL"]==[]:
                 messagebox.showinfo('', 'You need to login to do this')    
             else:
                 Settings.GetWindowRectFromName('START_POS')
@@ -194,47 +217,61 @@ class Menus():
                 Menus.CardsM()
 
         def games():
-            if SETTINGS["COOKIES"]==[]:
+            if SETTINGS["COOKIES_BUY"]==[]:
                 messagebox.showinfo('', 'You need to login to do this')
             else:
-                Settings.GetWindowRectFromName('START_POS')
-                win.destroy()
-                Menus.GamesMPop()
+                if SETTINGS["GPOP_FILTER"]["MAX_PRICE"] != None:
+                    result = messagebox.askquestion("","Do you want to Change buy filters?")
+                    if result == 'yes':
+                        Settings.GetWindowRectFromName('START_POS')
+                        win.destroy()
+                        Menus.GamesMPop()
+                    else:
+                        win.destroy()
+                        Menus.GamesM()
+                else:
+                    Settings.GetWindowRectFromName('START_POS')
+                    win.destroy()
+                    Menus.GamesMPop()
 
         def settings():
             Settings.GetWindowRectFromName('START_POS')
             win.destroy()
             Menus.SettingsM() 
-
+            
         def logout():
-            SETTINGS["COOKIES"]=[]
+            SETTINGS["COOKIES_SELL"]=[]
+            SETTINGS["COOKIES_BUY"]=[]
+            SETTINGS["VERSION_CD"]=None
+            SETTINGS["COOKIES_CD"]=None
             Settings.save()
             Settings.GetWindowRectFromName('START_POS')
             win.destroy()
             Menus.StartM()
 
         def idle():
-            if SETTINGS["STEAM_DIR"] == None:
-                if not process_exists("Steam.exe"):
-                    filename = 'C:\Program Files\Steam\steam.exe'
-                    while not os.path.exists(filename):
-                        messagebox.showinfo('', 'Select your steam exe')
-                        filename = filedialog.askopenfilename(initialdir = "/", title = "Select a File", filetypes = (("Text files", "*.exe*"), ("all files", "*.*")))
-                    SETTINGS["STEAM_DIR"] = filename
-                    subprocess.Popen([SETTINGS['STEAM_DIR']])
-                    Settings.save()
-                    sleep(10)
-                    windowHandle = ctypes.windll.user32.FindWindowW(None, "Steam")
-                    ctypes.windll.user32.ShowWindow(windowHandle, 6)
-                subprocess.Popen([f"{os.path.abspath(os.path.dirname(__file__))}/idle_master_extended_v1.7/IdleMasterExtended.exe"])
-            else:
-                if not process_exists("Steam.exe"):
-                    subprocess.Popen([SETTINGS['STEAM_DIR']])
-                    sleep(10)
-                    windowHandle = ctypes.windll.user32.FindWindowW(None, "Steam")
-                    ctypes.windll.user32.ShowWindow(windowHandle, 6)
-                subprocess.Popen([f"{os.path.abspath(os.path.dirname(__file__))}/idle_master_extended_v1.7/IdleMasterExtended.exe"])
-
+            result = messagebox.askquestion("","Do you want to idle Games?")
+            if result == 'yes':
+                if SETTINGS["STEAM_DIR"] == None:
+                    if not process_exists("Steam.exe"):
+                        filename = 'C:\Program Files\Steam\steam.exe'
+                        while not os.path.exists(filename):
+                            messagebox.showinfo('', 'Select your steam exe')
+                            filename = filedialog.askopenfilename(initialdir = "/", title = "Select a File", filetypes = (("Executable", "*.exe*"), ("all files", "*.*")))
+                        SETTINGS["STEAM_DIR"] = filename
+                        subprocess.Popen([SETTINGS['STEAM_DIR']])
+                        Settings.save()
+                        sleep(10)
+                        windowHandle = ctypes.windll.user32.FindWindowW(None, "Steam")
+                        ctypes.windll.user32.ShowWindow(windowHandle, 6)
+                    subprocess.Popen([f"{os.path.abspath(os.path.dirname(__file__))}/idle_master_extended_v1.7/IdleMasterExtended.exe"])
+                else:
+                    if not process_exists("Steam.exe"):
+                        subprocess.Popen([SETTINGS['STEAM_DIR']])
+                        sleep(10)
+                        windowHandle = ctypes.windll.user32.FindWindowW(None, "Steam")
+                        ctypes.windll.user32.ShowWindow(windowHandle, 6)
+                    subprocess.Popen([f"{os.path.abspath(os.path.dirname(__file__))}/idle_master_extended_v1.7/IdleMasterExtended.exe"])
 
         def process_exists(process_name):
             call = 'TASKLIST', '/FI', 'imagename eq %s' % process_name
@@ -267,7 +304,12 @@ class Menus():
         autob.place(x=POS_COL1_X+60,y=POS_ROW4_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         settingsb.place(x=POS_COL1_X+60,y=POS_ROW5_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
 
-        if SETTINGS["COOKIES"]==[]:
+        if SETTINGS["COOKIES_CD"] != None:
+            if round((time.time()-SETTINGS["COOKIES_CD"])/60/60,2) > 30:
+                messagebox.showwarning("","Cookies are too old please log in again")
+                logout()
+
+        if SETTINGS["COOKIES_SELL"]==[]:
             btn = Button(win, text="Login", relief="flat", fg=SETTINGS["TXT_COLOR"], cursor="hand2", bg=SETTINGS["BG_COLOR"], font=("Times", "14", "bold"), command=login)
             btn.place(x=POS_COL1_X+60,y=POS_ROW6_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         else:
@@ -275,9 +317,6 @@ class Menus():
             btnt.place(x=POS_COL1_X,y=POS_ROW6_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
             btnl = Button(win, text="Logout?", relief="flat", fg=SETTINGS["TXT_COLOR"], cursor="hand2", bg=SETTINGS["BG_COLOR"], font=("Times", "14", "bold"), command=logout)
             btnl.place(x=POS_COL2_X,y=POS_ROW6_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
-            # link = Label(win, text="Hyperlink", fg="black", cursor="hand2", bg=SETTINGS["BG_COLOR"])
-            # link.bind("<Button-1>", lambda e: webbrowser.open_new("http://www.google.com"))
-            # link.place(x=POS_COL2_X,y=POS_ROW4_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
 
         win.mainloop()
 
@@ -305,7 +344,7 @@ class Menus():
             if check_counter == 2:
                 driver = webdriver.Firefox()
                 # print_and_console("LOGING...")
-                driver.get(URL)
+                driver.get("https://store.steampowered.com/login/")
                 user = Functions.fnd(driver,"//input[@id='input_username']")
                 password = Functions.fnd(driver,"//input[@id='input_password']")
                 user.send_keys(usri.get())
@@ -333,24 +372,22 @@ class Menus():
                     driver.quit()
                     messagebox.showinfo('', "Incorrect input")
                 # print_and_console("LOGGED")
-                SETTINGS["COOKIES"]=driver.get_cookies()
-                SETTINGS["ACCID"]=Functions.fnds(driver,"//div[@id='global_actions']//a")[-1].get_attribute("href")
+                sleep(8)
+                accid = Functions.fnds(driver,"//div[@id='global_actions']//a")[-1].get_attribute("href")
+                if accid == "http://translation.steampowered.com/":
+                    messagebox.showwarning("","Error logging, please try again")
+                else:
+                    SETTINGS["COOKIES_BUY"]= driver.get_cookies()
+                    SETTINGS["ACCID"] = accid
+                    driver.get(f"{SETTINGS['ACCID']}/inventory/#753")
+                    SETTINGS["COOKIES_SELL"] = driver.get_cookies()
+                    SETTINGS["COOKIES_CD"] = time.time()
+                    Settings.save()
                 driver.quit()
                 win.destroy()
                 Menus.StartM()
-                Settings.save()
             else:
                 messagebox.showinfo('', warn)
-
-        def login_redirect():
-            try:
-                thread = threading.Thread(target=loging)
-                if not thread.is_alive():
-                    thread.start()
-                else:
-                    loging()
-            except:
-                pass
 
         def back():
             win.destroy()
@@ -375,7 +412,7 @@ class Menus():
         f2ai.place(x=POS_COL2_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
 
         # button 
-        btn = Button(win, text="Login", relief="flat", fg=SETTINGS["TXT_COLOR"], bg=SETTINGS["BG_COLOR"], font=("Times", "14", "bold"), command=login_redirect)
+        btn = Button(win, text="Login", relief="flat", fg=SETTINGS["TXT_COLOR"], bg=SETTINGS["BG_COLOR"], font=("Times", "14", "bold"), command=loging)
         btn.place(x=POS_COL1_X+60,y=POS_ROW4_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
 
         Backbt = Button(win, text="<", fg=SETTINGS["TXT_COLOR"], cursor="hand2", bg=SETTINGS["BG_COLOR"], command=back)
@@ -389,9 +426,6 @@ class Menus():
         win.config(bg=SETTINGS["BG_COLOR"])
         win.resizable(width=False, height=False)
         win.geometry(f"{SETTINGS_WIDTH}x{SETTINGS_HEIGHT}+{SETTINGS['SETTINGS_POS'][0]}+{SETTINGS['SETTINGS_POS'][1]}")
-        OPTIONS = ["1.0","1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0"]
-        variable = StringVar(win)
-        variable.set(OPTIONS[4])
 
         def dark_theme():
             if SETTINGS["BG_COLOR"] == "SystemButtonFace":
@@ -410,7 +444,7 @@ class Menus():
             Menus.SettingsM()
 
         def savemulti():
-            SETTINGS['PRICE_MULTIPLIER'] = float(variable.get())
+            SETTINGS['PRICE_MULTIPLIER'] = float(priceval.get())
             messagebox.showinfo('', 'succesfully updated')
             
         def back():
@@ -420,48 +454,301 @@ class Menus():
         
         def clear_cache():
             import shutil
-            folder = f"{Path.home()}\\AppData\\Local\\Temp\\"
-            for filename in os.listdir(folder):
-                file_path = os.path.join(folder, filename)
-                try:
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        os.unlink(file_path)
-                    elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)
-                except Exception as e:
-                    print('Failed to delete %s. Reason: %s' % (file_path, e))
+            files = 0
+            dirs = ["C:\\Windows\\Temp",f"{Path.home()}\\AppData\\Local\\Temp","C:\\Windows\\Prefetch"]
+            for dir in dirs:
+                folder = dir
+                for filename in os.listdir(folder):
+                    file_path = os.path.join(folder, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)
+                            files+=1
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                            files+=1
+                    except Exception as e:
+                        print(f'Failed to delete {file_path}.')
+            print(f"Deleted {files} files permanently")
+            filecount()
+            messagebox.showinfo("",f"Deleted {files} files permanently")
         
+        def stats():
+            pass
+            #MARK fer stats
+
+        def gneratepass():
+            import pyperclip
+            import random
+            chars = "!#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_abcdefghijklmnopqrstuvwxyz{|}~"
+            pas = ""
+            randchars = ""
+            for x in range(1000):
+                randchars += random.choice(chars)
+            for x in range(int(lengthval.get())):
+                pas += random.choice(randchars)
+            pyperclip.copy(pas)
+
+        def clearclip():
+            import pyperclip
+            pyperclip.copy("")
+
+        def filecount():
+            import shutil
+            files = 0
+            dirs = ["C:\\Windows\\Temp",f"{Path.home()}\\AppData\\Local\\Temp","C:\\Windows\\Prefetch"]
+            for dir in dirs:
+                folder = dir
+                for filename in os.listdir(folder):
+                    file_path = os.path.join(folder, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            files+=1
+                        elif os.path.isdir(file_path):
+                            files+=1
+                    except:
+                        pass
+            lblfilecount["text"] = f"{files} files"
+
         Backbt = Button(win, text="<", fg=SETTINGS["TXT_COLOR"], cursor="hand2", bg=SETTINGS["BG_COLOR"], command=back)
         Backbt.place(x=0,y=0,width=POX_X_SPACING, height=POX_Y_SPACING)
+        ##1
         darkbtn = Button(win, text="Dark Theme", fg=SETTINGS["TXT_COLOR"], cursor="hand2", bg=SETTINGS["BG_COLOR"], command=dark_theme)
         darkbtn.place(x=POS_COL1_X,y=POS_ROW1_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
-        backbtn = Button(win, text="Save", fg=SETTINGS["TXT_COLOR"], relief="groove" , cursor="hand2", bg=SETTINGS["BG_COLOR"], command=savemulti)
-        backbtn.place(x=POS_COL2_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
-        Option = OptionMenu(win, variable, *OPTIONS)
-        Option.configure(bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
-        Option.place(x=POS_COL1_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         lblLine1 = Label(win,text="-->",bg=SETTINGS["BG_COLOR"], relief="groove", fg=SETTINGS["TXT_COLOR"])
         lblLine1.place(x=POS_COL2_X,y=POS_ROW1_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
-        # lblLine2 = Label(win,text="-->",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
-        # lblLine2.place(x=POS_COL2_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         lblcolor = Label(win,text="",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         lblcolor.place(x=POS_COL3_X,y=POS_ROW1_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
-        lblcache = Label(win,text="Clear tmp folder",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
-        lblcache.place(x=POS_COL1_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
-        cachebtn = Button(win, text="Clear", fg=SETTINGS["TXT_COLOR"], relief="groove" , cursor="hand2", bg=SETTINGS["BG_COLOR"], command=clear_cache)
-        cachebtn.place(x=POS_COL2_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         if SETTINGS["BG_COLOR"] == "SystemButtonFace":
             lblcolor["text"]="white"
         else:
             lblcolor["text"]="black"
+        ##2
+        OPTIONS = ["1.0","1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0"]
+        priceval = StringVar(win)
+        priceval.set(OPTIONS[4])
+        Option = OptionMenu(win, priceval, *OPTIONS)
+        Option.configure(bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"], cursor="hand2")
+        Option.place(x=POS_COL1_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        backbtn = Button(win, text="Save", fg=SETTINGS["TXT_COLOR"], relief="groove" , cursor="hand2", bg=SETTINGS["BG_COLOR"], command=savemulti)
+        backbtn.place(x=POS_COL2_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         lblmultiplier = Label(win,text=f"x{SETTINGS['PRICE_MULTIPLIER']}%",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         lblmultiplier.place(x=POS_COL3_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
-        
+        ##3
+        lblcache = Label(win,text="Clear tmp folder",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        lblcache.place(x=POS_COL1_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        cachebtn = Button(win, text="Clear", fg=SETTINGS["TXT_COLOR"], relief="groove" , cursor="hand2", bg=SETTINGS["BG_COLOR"], command=clear_cache)
+        cachebtn.place(x=POS_COL2_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        lblfilecount = Label(win,text="",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        lblfilecount.place(x=POS_COL3_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        filecount()
+        ##4
+        cachebtn = Button(win, text="Clear clipboard", fg=SETTINGS["TXT_COLOR"], relief="groove" , cursor="hand2", bg=SETTINGS["BG_COLOR"], command=clearclip)
+        cachebtn.place(x=POS_COL1_X,y=POS_ROW4_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        cachebtn = Button(win, text="Generate pass", fg=SETTINGS["TXT_COLOR"], relief="groove" , cursor="hand2", bg=SETTINGS["BG_COLOR"], command=gneratepass)
+        cachebtn.place(x=POS_COL2_X,y=POS_ROW4_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        OPTIONS2 = ["10","15","20","25","30","35","40","45","50"]
+        lengthval = StringVar(win)
+        lengthval.set(OPTIONS2[4])
+        Option = OptionMenu(win, lengthval, *OPTIONS2)
+        Option.configure(bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"], cursor="hand2")
+        Option.place(x=POS_COL3_X,y=POS_ROW4_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        ##5
+        # link_trade = "steam://openurl/https://steamcommunity.com/tradeoffer/new/?partner=293476493&token=rxl9LuiU"
+        #MARK support link
+        #MARK reset settings
 
         win.mainloop()
 
-    def GamesM():
+    def Auto():
         pass
+    
+    def AutoPop():
+        pass
+
+    def GamesM():
+        win = Tk()
+        win.title(SETTINGS['TITLE'])
+        win.config(bg=SETTINGS["BG_COLOR"])
+        win.resizable(width=False, height=False)
+        win.geometry(f"{GAMES_WIDTH}x{GAMES_HEIGTH}+{SETTINGS['GAMES_POS'][0]}+{SETTINGS['GAMES_POS'][1]}")
+
+        def back():
+            Settings.GetWindowRectFromName('GAMES_POS')
+            win.destroy()
+            Menus.StartM()
+        
+        def Get_cookies(driver):
+            for cookie in SETTINGS["COOKIES_BUY"]:
+                driver.add_cookie(cookie)
+            return driver
+
+        def games_redirect():
+            try:
+                thread = threading.Thread(target=games_buy)
+                if not thread.is_alive():
+                    thread.start()
+                else:
+                    games_buy()
+            except:
+                pass
+
+        def games_buy():
+            driver = webdriver.Firefox()
+            driver.implicitly_wait(3)
+            driver.get("https://store.steampowered.com/")
+            sleep(0.5)
+            driver = Get_cookies(driver)
+            driver.execute_script('''ChangeLanguage( 'english' );''')
+            sleep(1)
+            driver.get("https://store.steampowered.com/")
+            sleep(2)
+            SETTINGS["STOP"]=False
+            # try:
+            if SETTINGS["WALLET"]["LAST_CHECK"] == None or (time.time()-SETTINGS["WALLET"]["LAST_CHECK"]) > 60:
+                wallet = driver.find_element(By.XPATH,"//a[@id='header_wallet_balance']").text
+                sleep(0.5)
+                wallet = float(str(wallet).split(" ")[1].replace(".","").replace(",","."))
+                SETTINGS["WALLET"]["AMOUNT"] = wallet
+                SETTINGS["WALLET"]["LAST_CHECK"] = time.time()
+            driver.get("https://store.steampowered.com/search/?sort_by=Price_ASC&maxprice=70&category1=998&category2=29&specials=1")
+            sleep(20)
+            gamenum = 0
+            games = {}
+            totalp = 0.00
+            warn = ""
+            startbuytime = time.time()
+            filters = {"wallet": float(SETTINGS["WALLET"]["AMOUNT"])}
+            if SETTINGS["GPOP_FILTER"]["WALLET_QTTY"] != None:
+                filters["wallet_lim"] = float(SETTINGS["GPOP_FILTER"]["WALLET_QTTY"])
+            if SETTINGS["GPOP_FILTER"]["QUANTITY_ARS"] != None:
+                filters["ars_qtty"] = float(SETTINGS["GPOP_FILTER"]["QUANTITY_ARS"])
+            if SETTINGS["GPOP_FILTER"]["QUANTITY_GAM"] != None:
+                filters["game_qtty"] = float(SETTINGS["GPOP_FILTER"]["QUANTITY_GAM"])
+            rows = driver.find_elements(By.CLASS_NAME,"search_result_row")
+            rowschkd = 0
+            while warn == "":
+                rowsres = 0
+                if rowschkd == len(driver.find_elements(By.CLASS_NAME,"search_result_row"))-100:
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    sleep(2)
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    sleep(2)
+                    rows = driver.find_elements(By.CLASS_NAME,"search_result_row")
+                for row in rows:
+                    if rowschkd == len(driver.find_elements(By.CLASS_NAME,"search_result_row"))-100:
+                        break
+                    rowsres+=1
+                    if rowschkd <= rowsres:
+                        rowschkd+=1
+                        if not 'ds_owned' in row.get_attribute('class').split():
+                            gameprice = row.find_elements(By.CLASS_NAME,"search_price")[0].text
+                            try:
+                                gameprice = float(str(gameprice).split(" ")[2].replace(",","."))
+                            except:
+                                break
+                            gamename = row.find_elements(By.CLASS_NAME,"search_name")[0].text
+                            gamelink = row.get_attribute('href')
+                            try:
+                                session = HTMLSession()
+                                request = session.get(gamelink)
+                                script = request.html.find(".btn_green_steamui", first=True).attrs['href']
+                                if len(script) > 31:
+                                    script = request.html.find(".btn_green_steamui")[1].attrs['href']
+                            except:
+                                script = ""
+                            add = False
+                            game = {"name": gamename,"price": gameprice, "link":gamelink, "script": script}
+                            gamename = ""
+                            gameprice = 0.00
+                            gamelink = ""
+                            script = ""
+                            if "wallet_lim" in filters:
+                                if filters["wallet_lim"] < filters["wallet"]-game["price"]:#prior 1
+                                    add = True
+                                else:
+                                    warn = "Wallet limit reached"
+                                    break
+                            if "ars_qtty" in filters:
+                                if filters["ars_qtty"] > game["price"]:#prior 2
+                                    add = True
+                                else:
+                                    warn = "ARS qtty reached"
+                                    break
+                            if "game_qtty" in filters:
+                                if filters["game_qtty"] > gamenum:#prior 3
+                                    add = True
+                                else:
+                                    warn = "GAME qtty reached"
+                                    break
+                            if float(game["price"]) >= float(SETTINGS["GPOP_FILTER"]["MAX_PRICE"]):
+                                if filters["wallet"] > (totalp+game["price"]):
+                                    if add:
+                                        totalp+=game["price"]
+                                        games[gamenum] = game ## save game
+                                        filters["wallet"] -= game["price"]##update wallet
+                                        gamenum+=1##next game
+                                        if "ars_qtty" in filters:  
+                                            filters["ars_qtty"] -= game["price"]## update filter
+                                        game = {}
+                                        # print(f'{gamenum}/{int(filters["game_qtty"])}')
+                                else:
+                                    warn = "Not enough founds"
+                                    break
+                            else:
+                                warn = "Price too high"
+                                break
+
+            res = messagebox.askquestion("",f'Do u want to buy {gamenum} Games for {round(totalp,2)} Ars,\n·{warn}')
+            if res == "yes":
+                driver.get("https://store.steampowered.com/cart/")
+                sleep(0.5)
+                for x in range(gamenum):
+                    driver.execute_script(games[x]["script"])
+                    sleep(2.5)
+                    if driver.find_element(By.CLASS_NAME,"cart_status_message").text != "Your item has been added!":
+                        # driver.execute_script(games[x]["script"])
+                        print(games[x]["name"])
+                        gamenum-=1
+                sleep(1)
+                finishbuytime = time.time()
+                lblCounter["text"] = gamenum
+                lblTime["text"] = str(int(finishbuytime-startbuytime))+"s"
+                driver.find_element(By.XPATH,'//*[@id="btn_purchase_self"]').click()
+                sleep(3)
+                # if driver.find_element(By.XPATH,'//*[@id="error_display"]').text == "Please confirm your password to continue.":
+                #     messagebox.showinfo("","Please log in to finish the buy, then press accept")
+                print("done")
+            else:
+                driver.close()
+            
+            
+            # except Exception as e:
+            #     logging.error(e)
+        
+        def changefilter():
+            win.destroy()
+            Menus.GamesMPop()
+
+        Backbt = Button(win, text="<", fg=SETTINGS["TXT_COLOR"], cursor="hand2", bg=SETTINGS["BG_COLOR"], command=back)
+        Backbt.place(x=0,y=0,width=POX_X_SPACING, height=POX_Y_SPACING)
+        ##time
+        Label3 = Label(win, text="TIME",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        Label3.place(x=POS_COL1_X,y=POS_ROW1_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        lblTime = Label(win,text="0", borderwidth=2, relief="groove",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        lblTime.place(x=POS_COL2_X,y=POS_ROW1_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        ###sold
+        Label1 = Label(win, text="GAMES BOUGHT",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        Label1.place(x=POS_COL1_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        lblCounter = Label(win,text="0", borderwidth=2, relief="groove",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        lblCounter.place(x=POS_COL2_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        ###Start
+        btnStart = Button(win,text="Start", command=games_redirect,bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        btnStart.place(x=POS_COL1_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        ###filter
+        btnStart = Button(win,text="Change filter", command=changefilter,bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        btnStart.place(x=POS_COL2_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
+        win.mainloop()
 
     def GamesMPop():
         user32 = ctypes.windll.user32
@@ -478,16 +765,20 @@ class Menus():
 
         def save():
             if gamepric.get() != "":
+                SETTINGS["GPOP_FILTER"]["MAX_PRICE"] = None
+                SETTINGS["GPOP_FILTER"]["QUANTITY_ARS"] = None
+                SETTINGS["GPOP_FILTER"]["QUANTITY_GAM"] = None
+                SETTINGS["GPOP_FILTER"]["WALLET_QTTY"] = None
                 if qttars.get() == "" and qttgam.get() == "" and limitwa.get() == "":
                     messagebox.showinfo('', 'You have to enter atleast one filter')
                 else:
-                    SETTINGS["BG_COLOR"]["MAX_PRICE"] = gamepricl.get()
+                    SETTINGS["GPOP_FILTER"]["MAX_PRICE"] = gamepric.get()
                     if qttars.get() != "":
-                        SETTINGS["BG_COLOR"]["QUANTITY_ARS"] = qttars.get()
+                        SETTINGS["GPOP_FILTER"]["QUANTITY_ARS"] = qttars.get()
                     if qttgam.get() != "":
-                        SETTINGS["BG_COLOR"]["QUANTITY_GAM"] = qttgam.get()
+                        SETTINGS["GPOP_FILTER"]["QUANTITY_GAM"] = qttgam.get()
                     if limitwa.get() != "":
-                        SETTINGS["BG_COLOR"]["WALLET_QTTY"] = limitwa.get()
+                        SETTINGS["GPOP_FILTER"]["WALLET_QTTY"] = limitwa.get()
                     Settings.save()
                     win.destroy()
                     Menus.GamesM()
@@ -506,13 +797,21 @@ class Menus():
         qttgaml.place(x=POS_COL1_X,y=POS_ROW4_Y,width=NORMAL_WIDTH*2, height=NORMAL_HEIGTH)
         limitwal.place(x=POS_COL1_X,y=POS_ROW5_Y,width=NORMAL_WIDTH*2, height=NORMAL_HEIGTH)
 
-        buyby = Label(win, text='BUY BY',bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"], font=("Times", "14"))
+        buyby = Label(win, text='BUY BY, PRIORITY \/',bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"], font=("Times", "14"))
         buyby.place(x=POS_COL1_X,y=POS_ROW2_Y,width=NORMAL_WIDTH*3, height=NORMAL_HEIGTH)
 
         gamepric = Entry(win, fg=SETTINGS["TXT_COLOR"], font=("Times", "14"), bg=SETTINGS["BG_COLOR"])
         qttars = Entry(win, fg=SETTINGS["TXT_COLOR"], font=("Times", "14"), bg=SETTINGS["BG_COLOR"])
         qttgam = Entry(win, fg=SETTINGS["TXT_COLOR"], font=("Times", "14"), bg=SETTINGS["BG_COLOR"])
         limitwa = Entry(win, fg=SETTINGS["TXT_COLOR"], font=("Times", "14"), bg=SETTINGS["BG_COLOR"])
+        if SETTINGS["GPOP_FILTER"]["MAX_PRICE"] != None:
+            gamepric.insert(0,SETTINGS["GPOP_FILTER"]["MAX_PRICE"])
+        if SETTINGS["GPOP_FILTER"]["QUANTITY_ARS"] != None:
+            qttars.insert(0,SETTINGS["GPOP_FILTER"]["QUANTITY_ARS"])
+        if SETTINGS["GPOP_FILTER"]["QUANTITY_GAM"] != None:
+            qttgam.insert(0,SETTINGS["GPOP_FILTER"]["QUANTITY_GAM"])
+        if SETTINGS["GPOP_FILTER"]["WALLET_QTTY"] != None:
+            limitwa.insert(0,SETTINGS["GPOP_FILTER"]["WALLET_QTTY"])
 
         gamepric.place(x=POS_COL3_X,y=POS_ROW1_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         qttars.place(x=POS_COL3_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
@@ -549,7 +848,7 @@ class Menus():
             Clean()
             ##DB
             mylist.insert(END,"|  id  |  Card Name  |  Price  |  Percent  |  Game  |  Date  |  ")
-            connection = sqlite3.connect(SETTINGS["S_DB_FILE"])
+            connection = sqlite3.connect(SETTINGS["DB_FILE"])
             cursor = connection.cursor()
             cursor.execute('''SELECT * FROM Cards''')
             select = cursor.fetchall()
@@ -563,7 +862,7 @@ class Menus():
             text = txtInput1.get()
             if text!="":
                 ##DB
-                connection = sqlite3.connect(SETTINGS["S_DB_FILE"])
+                connection = sqlite3.connect(SETTINGS["DB_FILE"])
                 cursor = connection.cursor()
                 cursor.execute('''DELETE FROM Cards WHERE id = {}'''.format(text))
                 connection.commit()
@@ -575,7 +874,7 @@ class Menus():
         def Sel():
             Clean()
             ##DB
-            connection = sqlite3.connect(SETTINGS["S_DB_FILE"])
+            connection = sqlite3.connect(SETTINGS["DB_FILE"])
             cursor = connection.cursor()
             cursor.execute('''SELECT * FROM Cards''')
             select = cursor.fetchall()
@@ -602,7 +901,8 @@ class Menus():
             return string.replace(",",".")
 
         def Get_cookies(driver):
-            for cookie in SETTINGS["COOKIES"]:
+            driver.delete_all_cookies()
+            for cookie in SETTINGS["COOKIES_SELL"]:
                 driver.add_cookie(cookie)
             return driver
 
@@ -613,8 +913,8 @@ class Menus():
             SETTINGS["IPAGE"]=0
             SETTINGS["PRICE"]=0
 
-        def GotoPage(driver,inventory_url):
-            driver.get(inventory_url)##load inv
+        def GotoPage(driver):
+            driver.get(f"{SETTINGS['ACCID']}/inventory/#753")##load inv
             sleep(1)
             if SETTINGS["IPAGE"] > 0:##scroll
                 sleep(0.5)
@@ -624,9 +924,9 @@ class Menus():
 
         def cromos_sell():
             try:
-                if not os.path.exists(SETTINGS["S_DB_FILE"]):
+                if not os.path.exists(SETTINGS["DB_FILE"]):
                     ##DB
-                    connection = sqlite3.connect(SETTINGS["S_DB_FILE"])
+                    connection = sqlite3.connect(SETTINGS["DB_FILE"])
                     cursor = connection.cursor()
                     cursor.execute('''CREATE TABLE IF NOT EXISTS Cards (id INT PRIMARY KEY,Name TEXT, Price FLOAT, Percent INT, Game TEXT, Date TEXT)''')
                     connection.commit()
@@ -638,15 +938,15 @@ class Menus():
                 driver = webdriver.Firefox()
                 driver.implicitly_wait(3)
                 driver.get("https://steamcommunity.com/")
+                sleep(0.5)
                 driver = Get_cookies(driver)
                 driver.execute_script('''window.open("","_blank");''')
                 driver.switch_to.window(driver.window_handles[0])
-                inventory_url = f"{SETTINGS['ACCID']}/inventory/#753"
+                sleep(0.5)
                 #---start doing sells
-                driver.get(URL)
                 driver.execute_script('''ChangeLanguage( 'english' );''')
                 sleep(1)
-                GotoPage(driver,inventory_url)##load inv & scroll
+                GotoPage(driver)##load inv & scroll
                 SETTINGS["STOP"]=False
                 card_nameb = None
                 name = ["",""]
@@ -654,7 +954,7 @@ class Menus():
                 for x in range(10000):
                     if SETTINGS["STOP"]==False:
                         Tstart = time.time()
-                        Get_inventory_grid(driver,1,inventory_url)
+                        Get_inventory_grid(driver,1)
                         name = ["",""]
                         gname = ["",""]
                         try:##find card name
@@ -716,12 +1016,12 @@ class Menus():
                                 price = round(float(Replace(price))*SETTINGS["PRICE_MULTIPLIER"],2)
                                 print_and_console("PRICE FOUND")
                                 driver.switch_to.window(driver.window_handles[0])
-                                finish_sell(driver, price, card_namea, game_name, inventory_url,Tstart)
+                                finish_sell(driver, price, card_namea, game_name,Tstart)
                             except ValueError:
                                 SETTINGS["GRID"]+=1
                         else:
                             card_nameb = card_namea
-                            finish_sell(driver, price, card_namea, game_name, inventory_url,Tstart)
+                            finish_sell(driver, price, card_namea, game_name,Tstart)
                     else:
                         driver.quit()
                         print_and_console("***STOPED***")
@@ -731,7 +1031,6 @@ class Menus():
             except Exception as e:
                 logging.error(e)
                 messagebox.showerror(title="Error", message="Unexpected error")
-                exit()
 
         def print_and_console(text):
             print(text)
@@ -771,9 +1070,9 @@ class Menus():
             mylist.insert(END,"Back-> Quits to the menu, please press stop before pressing this to avoid issues")
             mylist.insert(END,"ESTIMATED TIME 30m -> 250 cards (comfirmation cap)")
 
-        def finish_sell(driver,price,name,gamename,inventory_url,Tstart):
+        def finish_sell(driver,price,name,gamename,Tstart):
             ##SELLING
-            Get_inventory_grid(driver,0,inventory_url)
+            Get_inventory_grid(driver,0)
             try:
                 Functions.fnd(driver,"//div[@id='iteminfo0_item_market_actions']//span[2]").click()##sell btn
             except:
@@ -820,7 +1119,7 @@ class Menus():
                     lblTime["text"] = SETTINGS["TIME"]
                     lblPrice["text"] = SETTINGS["PRICE"]
                     ##DB
-                    connection = sqlite3.connect(SETTINGS["S_DB_FILE"])
+                    connection = sqlite3.connect(SETTINGS["DB_FILE"])
                     cursor = connection.cursor()
                     cursor.execute('''SELECT id FROM Cards ORDER BY id DESC LIMIT 1''')
                     select = cursor.fetchall()
@@ -848,7 +1147,6 @@ class Menus():
                     print_and_console("SOLD")
                     sleep(0.5)
 
-
         Backbt = Button(win, text="<", fg=SETTINGS["TXT_COLOR"], cursor="hand2", bg=SETTINGS["BG_COLOR"], command=back)
         Backbt.place(x=0,y=0,width=POX_X_SPACING, height=POX_Y_SPACING)
         ###Start
@@ -861,7 +1159,7 @@ class Menus():
         btnStop = Button(win,text="Stop", command=stop,bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         btnStop.place(x=POS_COL6_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         ###Restart
-        btnRestart = Button(win,text="Reset", command=reset_settings,bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        btnRestart = Button(win,text="Reset cur.", command=reset_settings,bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         btnRestart.place(x=POS_COL6_X,y=POS_ROW1_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         ###info
         btnRestart = Button(win,text="i", command=info,bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
@@ -895,21 +1193,22 @@ class Menus():
         scrollbar.place(x=POS_COL7_X-POX_X_SPACING,y=POS_ROW4_Y,width=POX_X_SPACING, height=NORMAL_HEIGTH*6)
         ####Counter 
         ###sold
-        Label1 = Label(win, text="CARDS DONE",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        Label1 = Label(win, text="CURR. CARDS",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         Label1.place(x=POS_COL4_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         lblCounter = Label(win,text="0", borderwidth=2, relief="groove",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         lblCounter.place(x=POS_COL5_X,y=POS_ROW3_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         ###price
-        Label2 = Label(win, text="CUR. TOTAL PRICE",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        Label2 = Label(win, text="CUR. PRICE",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         Label2.place(x=POS_COL4_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         lblPrice = Label(win,text="0", borderwidth=2, relief="groove",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         lblPrice.place(x=POS_COL5_X,y=POS_ROW2_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         ##time
-        Label3 = Label(win, text="TIME",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
+        Label3 = Label(win, text="CUR. TIME",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         Label3.place(x=POS_COL4_X,y=POS_ROW1_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
         lblTime = Label(win,text="0", borderwidth=2, relief="groove",bg=SETTINGS["BG_COLOR"], fg=SETTINGS["TXT_COLOR"])
         lblTime.place(x=POS_COL5_X,y=POS_ROW1_Y,width=NORMAL_WIDTH, height=NORMAL_HEIGTH)
-        #FIX update cards gui
         win.mainloop()
 
 Menus.StartM()
+
+# TODO crismas cr fornite epic
